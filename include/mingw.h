@@ -154,6 +154,8 @@ ssize_t winansi_safe_write(int fd, const void *buf, size_t count);
 #define printf(...) winansi_printf(__VA_ARGS__)
 #define fprintf(...) winansi_fprintf(__VA_ARGS__)
 
+int winansi_get_terminal_width_height(struct winsize *win);
+
 /*
  * stdlib.h
  */
