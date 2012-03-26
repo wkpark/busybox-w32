@@ -193,6 +193,9 @@ NOIMPL(mingw_bind,SOCKET s UNUSED_PARAM,const struct sockaddr* sa UNUSED_PARAM,i
 /*
  * sys/stat.h
  */
+typedef int blkcnt_t;
+typedef int nlink_t;
+
 #define S_ISUID 04000
 #define S_ISGID 02000
 #define S_ISVTX 01000
@@ -213,8 +216,6 @@ NOIMPL(mingw_bind,SOCKET s UNUSED_PARAM,const struct sockaddr* sa UNUSED_PARAM,i
 #define S_IROTH (S_IRGRP >> 3)
 #define S_IWOTH (S_IWGRP >> 3)
 #define S_IXOTH (S_IXGRP >> 3)
-
-typedef short nlink_t;
 
 NOIMPL(fchmod,int fildes UNUSED_PARAM, mode_t mode UNUSED_PARAM);
 NOIMPL(fchown,int fd UNUSED_PARAM, uid_t uid UNUSED_PARAM, gid_t gid UNUSED_PARAM);
