@@ -140,6 +140,11 @@ int mingw_rename(const char*, const char*);
 #define fopen mingw_fopen
 #define rename mingw_rename
 
+FILE *mingw_popen(const char *cmd, const char *mode);
+int mingw_pclose(FILE *fd);
+#define popen mingw_popen
+#define pclose mingw_pclose
+
 /*
  * ANSI emulation wrappers
  */
