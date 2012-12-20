@@ -13670,6 +13670,14 @@ int ash_main(int argc UNUSED_PARAM, char **argv)
 	volatile smallint state;
 	struct jmploc jmploc;
 	struct stackmark smark;
+	const char *term;
+
+#if ENABLE_PLATFORM_MINGW32
+	/* Leave TERM unchanged */
+	term = getenv("TERM");
+	if (!term)
+		xsetenv("TERM", "ansi");
+#endif
 
 	/* Initialize global data */
 	INIT_G_misc();
