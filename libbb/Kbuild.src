@@ -52,7 +52,6 @@ lib-y += last_char_is.o
 lib-y += lineedit.o lineedit_ptr_hack.o
 lib-y += llist.o
 lib-y += make_directory.o
-lib-y += makedev.o
 lib-y += hash_md5_sha.o
 # Alternative (disabled) MD5 implementation
 #lib-y += hash_md5prime.o
@@ -106,6 +105,17 @@ lib-y += xfuncs_printf.o
 lib-y += xgetcwd.o
 lib-y += xreadlink.o
 lib-y += xrealloc_vector.o
+
+lib-$(CONFIG_PLATFORM_POSIX) += get_console.o
+lib-$(CONFIG_PLATFORM_POSIX) += getpty.o
+lib-$(CONFIG_PLATFORM_POSIX) += inet_common.o
+lib-$(CONFIG_PLATFORM_POSIX) += kernel_version.o
+lib-$(CONFIG_PLATFORM_POSIX) += login.o
+lib-$(CONFIG_PLATFORM_POSIX) += makedev.o
+lib-$(CONFIG_PLATFORM_POSIX) += read_key.o
+lib-$(CONFIG_PLATFORM_POSIX) += signals.o
+lib-$(CONFIG_PLATFORM_POSIX) += udp_io.o
+lib-$(CONFIG_PLATFORM_POSIX) += xgethostbyname.o
 
 lib-$(CONFIG_PLATFORM_LINUX) += match_fstype.o
 

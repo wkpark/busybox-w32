@@ -86,6 +86,7 @@ struct passwd {
 	char *pw_dir;
 	uid_t pw_uid;
 	gid_t pw_gid;
+	char *pw_shell;		/* Shell program.  */
 };
 
 IMPL(getpwnam,struct passwd *,NULL,const char *name UNUSED_PARAM);
@@ -227,6 +228,8 @@ NOIMPL(mingw_bind,SOCKET s UNUSED_PARAM,const struct sockaddr* sa UNUSED_PARAM,i
 #define S_IROTH (S_IRGRP >> 3)
 #define S_IWOTH (S_IWGRP >> 3)
 #define S_IXOTH (S_IXGRP >> 3)
+
+typedef short nlink_t;
 
 NOIMPL(fchmod,int fildes UNUSED_PARAM, mode_t mode UNUSED_PARAM);
 NOIMPL(fchown,int fd UNUSED_PARAM, uid_t uid UNUSED_PARAM, gid_t gid UNUSED_PARAM);

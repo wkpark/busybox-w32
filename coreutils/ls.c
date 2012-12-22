@@ -335,7 +335,9 @@ struct dnode {
 	time_t    dn_ctime;
 #endif
 	ino_t     dn_ino;
+#ifndef __MINGW32__
 	blkcnt_t  dn_blocks;
+#endif
 	nlink_t   dn_nlink;
 	uid_t     dn_uid;
 	gid_t     dn_gid;
@@ -759,7 +761,9 @@ static struct dnode *my_stat(const char *fullname, const char *name, int force_f
 	cur->dn_ctime  = statbuf.st_ctime ;
 #endif
 	cur->dn_ino    = statbuf.st_ino   ;
+#ifndef __MINGW32__
 	cur->dn_blocks = statbuf.st_blocks;
+#endif
 	cur->dn_nlink  = statbuf.st_nlink ;
 	cur->dn_uid    = statbuf.st_uid   ;
 	cur->dn_gid    = statbuf.st_gid   ;

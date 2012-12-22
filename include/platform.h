@@ -447,8 +447,7 @@ typedef unsigned smalluint;
 /* These BSD-derived OSes share many similarities */
 #if (defined __digital__ && defined __unix__) \
  || defined __APPLE__ \
- || defined __FreeBSD__ || defined __OpenBSD__ || defined __NetBSD__ \
- || ENABLE_PLATFORM_MINGW32
+ || defined __FreeBSD__ || defined __OpenBSD__ || defined __NetBSD__
 # undef HAVE_CLEARENV
 # undef HAVE_FDATASYNC
 # undef HAVE_GETLINE
@@ -481,6 +480,16 @@ typedef unsigned smalluint;
 # undef HAVE_STRVERSCMP
 # undef HAVE_UNLOCKED_LINE_OPS
 # undef HAVE_NET_ETHERNET_H
+#endif
+
+#if ENABLE_PLATFORM_MINGW32
+# undef HAVE_STPCPY
+# undef HAVE_MNTENT_H
+# undef HAVE_SYS_STATFS_H
+# undef HAVE_STRVERSCMP
+# undef HAVE_DPRINTF
+# undef HAVE_UNLOCKED_STDIO
+# undef HAVE_UNLOCKED_LINE_OPS
 #endif
 
 /*
