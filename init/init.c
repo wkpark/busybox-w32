@@ -9,8 +9,8 @@
  * Licensed under GPLv2 or later, see file LICENSE in this source tree.
  */
 
-//applet:IF_INIT(APPLET(init, _BB_DIR_SBIN, _BB_SUID_DROP))
-//applet:IF_FEATURE_INITRD(APPLET_ODDNAME(linuxrc, init, _BB_DIR_ROOT, _BB_SUID_DROP, linuxrc))
+//applet:IF_INIT(APPLET(init, BB_DIR_SBIN, BB_SUID_DROP))
+//applet:IF_FEATURE_INITRD(APPLET_ODDNAME(linuxrc, init, BB_DIR_ROOT, BB_SUID_DROP, linuxrc))
 
 //kbuild:lib-$(CONFIG_INIT) += init.o
 
@@ -113,10 +113,8 @@
 #include <paths.h>
 #include <sys/resource.h>
 #ifdef __linux__
-#include <linux/vt.h>
-#endif
-#if ENABLE_FEATURE_UTMP
-# include <utmp.h> /* DEAD_PROCESS */
+# include <linux/vt.h>
+# include <sys/sysinfo.h>
 #endif
 #include "reboot.h" /* reboot() constants */
 
@@ -417,6 +415,7 @@ static void init_exec(const char *command)
 		char *word, *next;
 		int i = 0;
 		next = strcpy(buf, command - dash); /* command including "-" */
+		command = next + dash;
 		while ((word = strsep(&next, " \t")) != NULL) {
 			if (*word != '\0') { /* not two spaces/tabs together? */
 				cmd[i] = word;

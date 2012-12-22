@@ -16,7 +16,7 @@
 //config:	help
 //config:	  Display a tree of processes.
 
-//applet:IF_PSTREE(APPLET(pstree, _BB_DIR_USR_BIN, _BB_SUID_DROP))
+//applet:IF_PSTREE(APPLET(pstree, BB_DIR_USR_BIN, BB_SUID_DROP))
 
 //kbuild:lib-$(CONFIG_PSTREE) += pstree.o
 
@@ -24,7 +24,6 @@
 //usage:	"[-p] [PID|USER]"
 //usage:#define pstree_full_usage "\n\n"
 //usage:       "Display process tree, optionally start from USER or PID\n"
-//usage:     "\nOptions:"
 //usage:     "\n	-p	Show pids"
 
 #include "libbb.h"
@@ -76,7 +75,7 @@ struct globals {
 };
 #define G (*ptr_to_globals)
 #define INIT_G() do { \
-        SET_PTR_TO_GLOBALS(xzalloc(sizeof(G))); \
+	SET_PTR_TO_GLOBALS(xzalloc(sizeof(G))); \
 } while (0)
 
 
@@ -339,12 +338,14 @@ static void dump_by_user(PROC *current, uid_t uid)
 		dump_by_user(walk->child, uid);
 }
 
+#if ENABLE_FEATURE_SHOW_THREADS
 static void handle_thread(const char *comm, pid_t pid, pid_t ppid, uid_t uid)
 {
 	char threadname[COMM_LEN + 2];
 	sprintf(threadname, "{%.*s}", COMM_LEN - 2, comm);
 	add_proc(threadname, pid, ppid, uid/*, 1*/);
 }
+#endif
 
 static void mread_proc(void)
 {

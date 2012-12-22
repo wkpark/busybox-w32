@@ -19,7 +19,7 @@
 /* Input parsing code is always bulky - used heavy duty libc stuff as
    much as possible, missed out a lot of bounds checking */
 
-//applet:IF_DATE(APPLET(date, _BB_DIR_BIN, _BB_SUID_DROP))
+//applet:IF_DATE(APPLET(date, BB_DIR_BIN, BB_SUID_DROP))
 
 //kbuild:lib-$(CONFIG_DATE) += date.o
 
@@ -42,7 +42,8 @@
 //config:config FEATURE_DATE_NANO
 //config:	bool "Support %[num]N nanosecond format specifier"
 //config:	default n
-//config:	depends on DATE && PLATFORM_LINUX # syscall(__NR_clock_gettime)
+//config:	depends on DATE  # syscall(__NR_clock_gettime)
+//config:	select PLATFORM_LINUX
 //config:	help
 //config:	  Support %[num]N format specifier. Adds ~250 bytes of code.
 //config:
@@ -97,7 +98,6 @@
 //usage:       "[OPTIONS] [+FMT] [TIME]"
 //usage:#define date_full_usage "\n\n"
 //usage:       "Display time (using +FMT), or set time\n"
-//usage:     "\nOptions:"
 //usage:	IF_NOT_LONG_OPTS(
 //usage:     "\n	[-s] TIME	Set time to TIME"
 //usage:     "\n	-u		Work in UTC (don't convert to local time)"

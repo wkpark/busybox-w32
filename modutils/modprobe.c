@@ -8,7 +8,7 @@
  * Licensed under GPLv2 or later, see file LICENSE in this source tree.
  */
 
-//applet:IF_MODPROBE(APPLET(modprobe, _BB_DIR_SBIN, _BB_SUID_DROP))
+//applet:IF_MODPROBE(APPLET(modprobe, BB_DIR_SBIN, BB_SUID_DROP))
 
 #include "libbb.h"
 #include "modutils.h"
@@ -89,8 +89,7 @@
 //usage:	"[-alrqvsD" IF_FEATURE_MODPROBE_BLACKLIST("b") "]"
 //usage:	" MODULE [symbol=value]..."
 //usage:#define modprobe_full_usage "\n\n"
-//usage:       "Options:"
-//usage:     "\n	-a	Load multiple MODULEs"
+//usage:       "	-a	Load multiple MODULEs"
 //usage:     "\n	-l	List (MODULE is a pattern)"
 //usage:     "\n	-r	Remove MODULE (stacks) or do autoclean"
 //usage:     "\n	-q	Quiet"
@@ -158,20 +157,21 @@ struct module_entry { /* I'll call it ME. */
 	llist_t *deps; /* strings. modules we depend on */
 };
 
+#define DB_HASH_SIZE 256
+
 struct globals {
-	llist_t *db; /* MEs of all modules ever seen (caching for speed) */
 	llist_t *probes; /* MEs of module(s) requested on cmdline */
 	char *cmdline_mopts; /* module options from cmdline */
 	int num_unresolved_deps;
 	/* bool. "Did we have 'symbol:FOO' requested on cmdline?" */
 	smallint need_symbols;
 	struct utsname uts;
+	llist_t *db[DB_HASH_SIZE]; /* MEs of all modules ever seen (caching for speed) */
 } FIX_ALIASING;
-#define G (*(struct globals*)&bb_common_bufsiz1)
-#define INIT_G() do { } while (0)
-struct BUG_G_too_big {
-        char BUG_G_too_big[sizeof(G) <= COMMON_BUFSIZE ? 1 : -1];
-};
+#define G (*ptr_to_globals)
+#define INIT_G() do { \
+        SET_PTR_TO_GLOBALS(xzalloc(sizeof(G))); \
+} while (0)
 
 
 static int read_config(const char *path);
@@ -191,14 +191,26 @@ static char *gather_options_str(char *opts, const char *append)
 	return opts;
 }
 
+/* These three functions called many times, optimizing for speed.
+ * Users reported minute-long delays when they runn iptables repeatedly
+ * (iptables use modprobe to install needed kernel modules).
+ */
 static struct module_entry *helper_get_module(const char *module, int create)
 {
 	char modname[MODULE_NAME_LEN];
 	struct module_entry *e;
 	llist_t *l;
+	unsigned i;
+	unsigned hash;
 
 	filename2modname(module, modname);
-	for (l = G.db; l != NULL; l = l->link) {
+
+	hash = 0;
+	for (i = 0; modname[i]; i++)
+		hash = ((hash << 5) + hash) + modname[i];
+	hash %= DB_HASH_SIZE;
+
+	for (l = G.db[hash]; l; l = l->link) {
 		e = (struct module_entry *) l->data;
 		if (strcmp(e->modname, modname) == 0)
 			return e;
@@ -208,15 +220,15 @@ static struct module_entry *helper_get_module(const char *module, int create)
 
 	e = xzalloc(sizeof(*e));
 	e->modname = xstrdup(modname);
-	llist_add_to(&G.db, e);
+	llist_add_to(&G.db[hash], e);
 
 	return e;
 }
-static struct module_entry *get_or_add_modentry(const char *module)
+static ALWAYS_INLINE struct module_entry *get_or_add_modentry(const char *module)
 {
 	return helper_get_module(module, 1);
 }
-static struct module_entry *get_modentry(const char *module)
+static ALWAYS_INLINE struct module_entry *get_modentry(const char *module)
 {
 	return helper_get_module(module, 0);
 }
@@ -276,7 +288,7 @@ static int FAST_FUNC config_file_action(const char *filename,
 				continue;
 			filename2modname(tokens[1], wildcard);
 
-			for (l = G.probes; l != NULL; l = l->link) {
+			for (l = G.probes; l; l = l->link) {
 				m = (struct module_entry *) l->data;
 				if (fnmatch(wildcard, m->modname, 0) != 0)
 					continue;
@@ -378,7 +390,6 @@ static char *parse_and_add_kcmdline_module_options(char *options, const char *mo
 static int do_modprobe(struct module_entry *m)
 {
 	int rc, first;
-	llist_t *l;
 
 	if (!(m->flags & MODULE_FLAG_FOUND_IN_MODDEP)) {
 		if (!(option_mask32 & INSMOD_OPT_SILENT))
@@ -391,8 +402,11 @@ static int do_modprobe(struct module_entry *m)
 	if (!(option_mask32 & OPT_REMOVE))
 		m->deps = llist_rev(m->deps);
 
-	for (l = m->deps; l != NULL; l = l->link)
-		DBG("dep: %s", l->data);
+	if (0) {
+		llist_t *l;
+		for (l = m->deps; l; l = l->link)
+			DBG("dep: %s", l->data);
+	}
 
 	first = 1;
 	rc = 0;
@@ -530,9 +544,13 @@ int modprobe_main(int argc UNUSED_PARAM, char **argv)
 	xchdir(G.uts.release);
 
 	if (opt & OPT_LIST_ONLY) {
+		int i;
 		char name[MODULE_NAME_LEN];
 		char *colon, *tokens[2];
 		parser_t *p = config_open2(CONFIG_DEFAULT_DEPMOD_FILE, xfopen_for_read);
+
+		for (i = 0; argv[i]; i++)
+			replace(argv[i], '-', '_');
 
 		while (config_read(p, tokens, 2, 1, "# \t", PARSE_NORMAL)) {
 			colon = last_char_is(tokens[0], ':');
@@ -543,7 +561,6 @@ int modprobe_main(int argc UNUSED_PARAM, char **argv)
 			if (!argv[0])
 				puts(tokens[0]);
 			else {
-				int i;
 				for (i = 0; argv[i]; i++) {
 					if (fnmatch(argv[i], name, 0) == 0) {
 						puts(tokens[0]);
@@ -589,7 +606,7 @@ int modprobe_main(int argc UNUSED_PARAM, char **argv)
 		/* First argument is module name, rest are parameters */
 		DBG("probing just module %s", *argv);
 		add_probe(argv[0]);
-		G.cmdline_mopts = parse_cmdline_module_options(argv);
+		G.cmdline_mopts = parse_cmdline_module_options(argv, /*quote_spaces:*/ 1);
 	}
 
 	/* Happens if all requested modules are already loaded */

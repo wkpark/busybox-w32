@@ -29,10 +29,26 @@
 #include <netinet/ip_icmp.h>
 #include "libbb.h"
 
+#ifdef __BIONIC__
+/* should be in netinet/ip_icmp.h */
+# define ICMP_DEST_UNREACH    3  /* Destination Unreachable  */
+# define ICMP_SOURCE_QUENCH   4  /* Source Quench    */
+# define ICMP_REDIRECT        5  /* Redirect (change route)  */
+# define ICMP_ECHO            8  /* Echo Request      */
+# define ICMP_TIME_EXCEEDED  11  /* Time Exceeded    */
+# define ICMP_PARAMETERPROB  12  /* Parameter Problem    */
+# define ICMP_TIMESTAMP      13  /* Timestamp Request    */
+# define ICMP_TIMESTAMPREPLY 14  /* Timestamp Reply    */
+# define ICMP_INFO_REQUEST   15  /* Information Request    */
+# define ICMP_INFO_REPLY     16  /* Information Reply    */
+# define ICMP_ADDRESS        17  /* Address Mask Request    */
+# define ICMP_ADDRESSREPLY   18  /* Address Mask Reply    */
+#endif
+
 //config:config PING
 //config:	bool "ping"
 //config:	default y
-//config:	depends on PLATFORM_LINUX
+//config:	select PLATFORM_LINUX
 //config:	help
 //config:	  ping uses the ICMP protocol's mandatory ECHO_REQUEST datagram to
 //config:	  elicit an ICMP ECHO_RESPONSE from a host or gateway.
@@ -52,9 +68,9 @@
 //config:	  Make the output from the ping applet include statistics, and at the
 //config:	  same time provide full support for ICMP packets.
 
-/* Needs socket(AF_INET, SOCK_RAW, IPPROTO_ICMP), therefore _BB_SUID_MAYBE: */
-//applet:IF_PING(APPLET(ping, _BB_DIR_BIN, _BB_SUID_MAYBE))
-//applet:IF_PING6(APPLET(ping6, _BB_DIR_BIN, _BB_SUID_MAYBE))
+/* Needs socket(AF_INET, SOCK_RAW, IPPROTO_ICMP), therefore BB_SUID_MAYBE: */
+//applet:IF_PING(APPLET(ping, BB_DIR_BIN, BB_SUID_MAYBE))
+//applet:IF_PING6(APPLET(ping6, BB_DIR_BIN, BB_SUID_MAYBE))
 
 //kbuild:lib-$(CONFIG_PING)  += ping.o
 //kbuild:lib-$(CONFIG_PING6) += ping.o
@@ -73,7 +89,6 @@
 //usage:       "[OPTIONS] HOST"
 //usage:# define ping_full_usage "\n\n"
 //usage:       "Send ICMP ECHO_REQUEST packets to network hosts\n"
-//usage:     "\nOptions:"
 //usage:     "\n	-4,-6		Force IP or IPv6 name resolution"
 //usage:     "\n	-c CNT		Send only CNT pings"
 //usage:     "\n	-s SIZE		Send SIZE data bytes in packets (default:56)"
@@ -90,7 +105,6 @@
 //usage:       "[OPTIONS] HOST"
 //usage:# define ping6_full_usage "\n\n"
 //usage:       "Send ICMP ECHO_REQUEST packets to network hosts\n"
-//usage:     "\nOptions:"
 //usage:     "\n	-c CNT		Send only CNT pings"
 //usage:     "\n	-s SIZE		Send SIZE data bytes in packets (default:56)"
 //usage:     "\n	-I IFACE/IP	Use interface or IP address as source"
@@ -419,16 +433,18 @@ static void print_stats_and_exit(int junk UNUSED_PARAM)
 	exit(nreceived == 0 || (deadline && nreceived < pingcount));
 }
 
-static void sendping_tail(void (*sp)(int), const void *pkt, int size_pkt)
+static void sendping_tail(void (*sp)(int), int size_pkt)
 {
 	int sz;
 
 	CLR((uint16_t)ntransmitted % MAX_DUP_CHK);
 	ntransmitted++;
 
+	size_pkt += datalen;
+
 	/* sizeof(pingaddr) can be larger than real sa size, but I think
 	 * it doesn't matter */
-	sz = xsendto(pingsock, pkt, size_pkt, &pingaddr.sa, sizeof(pingaddr));
+	sz = xsendto(pingsock, G.snd_packet, size_pkt, &pingaddr.sa, sizeof(pingaddr));
 	if (sz != size_pkt)
 		bb_error_msg_and_die(bb_msg_write_error);
 
@@ -479,12 +495,12 @@ static void sendping4(int junk UNUSED_PARAM)
 
 	pkt->icmp_cksum = in_cksum((unsigned short *) pkt, datalen + ICMP_MINLEN);
 
-	sendping_tail(sendping4, pkt, datalen + ICMP_MINLEN);
+	sendping_tail(sendping4, ICMP_MINLEN);
 }
 #if ENABLE_PING6
 static void sendping6(int junk UNUSED_PARAM)
 {
-	struct icmp6_hdr *pkt = alloca(datalen + sizeof(struct icmp6_hdr) + 4);
+	struct icmp6_hdr *pkt = G.snd_packet;
 
 	//memset(pkt, 0, datalen + sizeof(struct icmp6_hdr) + 4);
 	pkt->icmp6_type = ICMP6_ECHO_REQUEST;
@@ -498,7 +514,7 @@ static void sendping6(int junk UNUSED_PARAM)
 
 	//TODO? pkt->icmp_cksum = in_cksum(...);
 
-	sendping_tail(sendping6, pkt, datalen + sizeof(struct icmp6_hdr));
+	sendping_tail(sendping6, sizeof(struct icmp6_hdr));
 }
 #endif
 

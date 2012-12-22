@@ -26,7 +26,7 @@
 //config:	  touch is used to create or change the access and/or
 //config:	  modification timestamp of specified files.
 
-//applet:IF_TOUCH(APPLET_NOFORK(touch, touch, _BB_DIR_BIN, _BB_SUID_DROP, touch))
+//applet:IF_TOUCH(APPLET_NOFORK(touch, touch, BB_DIR_BIN, BB_SUID_DROP, touch))
 
 //kbuild:lib-$(CONFIG_TOUCH) += touch.o
 
@@ -34,7 +34,6 @@
 //usage:       "[-c]" IF_DESKTOP(" [-d DATE] [-r FILE]") " FILE [FILE]..."
 //usage:#define touch_full_usage "\n\n"
 //usage:       "Update the last-modified date on the given FILE[s]\n"
-//usage:     "\nOptions:"
 //usage:     "\n	-c	Don't create files"
 //usage:	IF_DESKTOP(
 //usage:     "\n	-d DT	Date/time to use"
