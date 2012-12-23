@@ -336,6 +336,40 @@ static int ansi_emulate(const char *str, FILE *stream)
 	return rv;
 }
 
+static ssize_t ansi_safe_write(int fd, const void *buf, size_t count)
+{
+	int rv = 0;
+	const char *str = buf;
+	const char *pos = str;
+
+	while (*pos) {
+		size_t len;
+		pos = strstr(str, "\033[");
+		if (pos) {
+			len = pos - str;
+
+			if (len) {
+				size_t out_len = safe_write(fd, str, len);
+				rv += out_len;
+				if (out_len < len)
+					return rv;
+			}
+
+			str = pos + 2;
+			rv += 2;
+
+			pos = set_attr(str);
+			rv += pos - str;
+			str = pos;
+		} else {
+			rv += len = count - rv;
+			safe_write(fd, str, len);
+			return rv;
+		}
+	}
+	return rv;
+}
+
 int winansi_fputs(const char *str, FILE *stream)
 {
 	int rv;
@@ -354,6 +388,19 @@ int winansi_fputs(const char *str, FILE *stream)
 		return 0;
 	else
 		return EOF;
+}
+
+ssize_t winansi_safe_write(int fd, const void *buf, size_t count)
+{
+	if (!isatty(fd))
+		return safe_write(fd, buf, count);
+
+	init();
+
+	if (!console)
+		return safe_write(fd, buf, count);
+
+	return ansi_safe_write(fd, buf, count);
 }
 
 static int winansi_vfprintf(FILE *stream, const char *format, va_list list)

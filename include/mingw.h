@@ -149,6 +149,7 @@ int mingw_rename(const char*, const char*);
 int winansi_fputs(const char *str, FILE *stream);
 int winansi_printf(const char *format, ...) __attribute__((format (printf, 1, 2)));
 int winansi_fprintf(FILE *stream, const char *format, ...) __attribute__((format (printf, 2, 3)));
+ssize_t winansi_safe_write(int fd, const void *buf, size_t count);
 #define fputs winansi_fputs
 #define printf(...) winansi_printf(__VA_ARGS__)
 #define fprintf(...) winansi_fprintf(__VA_ARGS__)

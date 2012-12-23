@@ -8,6 +8,9 @@
  */
 
 #include "libbb.h"
+#if ENABLE_PLATFORM_MINGW32
+#define safe_write winansi_safe_write
+#endif
 
 /*
  * Write all of the supplied buffer out to a file.
