@@ -181,7 +181,7 @@ shell_builtin_read(void FAST_FUNC (*setvar)(const char *name, const char *val),
 		errno = 0;
 		pfd[0].fd = fd;
 		pfd[0].events = POLLIN;
-		if (poll(pfd, 1, timeout) != 1) {
+		if (timeout > 0 && poll(pfd, 1, timeout) != 1) {
 			/* timed out, or EINTR */
 			err = errno;
 			retval = (const char *)(uintptr_t)1;
