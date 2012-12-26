@@ -14,15 +14,13 @@ int64_t FAST_FUNC read_key(int fd, char *buf, int timeout)
 {
 	HANDLE cin = GetStdHandle(STD_INPUT_HANDLE);
 	INPUT_RECORD record;
-	DWORD nevent_out, mode;
+	DWORD nevent_out;
 	int ret = -1;
 
 	if (fd != 0)
 		bb_error_msg_and_die("read_key only works on stdin");
 	if (cin == INVALID_HANDLE_VALUE)
 		return -1;
-	GetConsoleMode(cin, &mode);
-	SetConsoleMode(cin, 0);
 
 	if (timeout > 0) {
 		if (WaitForSingleObject(cin, timeout) != WAIT_OBJECT_0)
@@ -70,6 +68,5 @@ int64_t FAST_FUNC read_key(int fd, char *buf, int timeout)
 		break;
 	}
  done:
-	SetConsoleMode(cin, mode);
 	return ret;
 }
