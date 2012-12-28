@@ -1,13 +1,54 @@
 #include "libbb.h"
 
-int tcsetattr(int fd UNUSED_PARAM, int mode UNUSED_PARAM,  const struct termios *t UNUSED_PARAM)
+int tcsetattr(int fd, int m UNUSED_PARAM, const struct termios *t)
 {
-	return -1;
+	HANDLE cin;
+	INPUT_RECORD record;
+	DWORD mode;
+
+	if (fd != STDIN_FILENO) return -1;
+
+	cin = GetStdHandle(STD_INPUT_HANDLE);
+	GetConsoleMode(cin, &mode);
+
+	/* special case for "read -n1" command */
+	if (t->c_lflag & ECHO)
+		mode |= ENABLE_ECHO_INPUT;
+	else
+		mode &= ~ENABLE_ECHO_INPUT;
+
+	if (t->c_cc[VMIN] && t->c_cc[VMIN] < 256)
+		mode &= ~ENABLE_LINE_INPUT;
+	else
+		mode |= ENABLE_LINE_INPUT;
+
+	SetConsoleMode(cin, mode);
+
+	return 0;
 }
 
-int tcgetattr(int fd UNUSED_PARAM, struct termios *t UNUSED_PARAM)
+int tcgetattr(int fd, struct termios *t)
 {
-	return -1;
+	HANDLE cin;
+	INPUT_RECORD record;
+	DWORD mode;
+
+	if (fd != STDIN_FILENO) return -1;
+
+	cin = GetStdHandle(STD_INPUT_HANDLE);
+	GetConsoleMode(cin, &mode);
+
+	if (mode & ENABLE_ECHO_INPUT)
+		t->c_lflag |= ECHO;
+	else
+		t->c_lflag &= ~ECHO;
+
+	if (mode & ENABLE_LINE_INPUT)
+		t->c_cc[VMIN] = 256;
+	else
+		t->c_cc[VMIN] = 1;
+
+	return 0;
 }
 
 int64_t FAST_FUNC read_key(int fd, char *buf, int timeout)

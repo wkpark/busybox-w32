@@ -2119,6 +2119,7 @@ int FAST_FUNC read_line_input(line_input_t *st, const char *prompt, char *comman
 	memset(initial_settings.c_cc, sizeof(initial_settings.c_cc), 0);
 	initial_settings.c_cc[VINTR] = CTRL('C');
 	initial_settings.c_cc[VEOF] = CTRL('D');
+	initial_settings.c_lflag = ECHO;
 	if (!isatty(0) || !isatty(1)) {
 #else
 	if (tcgetattr(STDIN_FILENO, &initial_settings) < 0

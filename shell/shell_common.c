@@ -148,6 +148,14 @@ shell_builtin_read(void FAST_FUNC (*setvar)(const char *name, const char *val),
 		/* if tcgetattr failed, tcsetattr will fail too.
 		 * Ignoring, it's harmless. */
 		tcsetattr(fd, TCSANOW, &tty);
+	} else {
+		tcgetattr(fd, &tty);
+#if ENABLE_PLATFORM_MINGW32
+		old_tty = tty;
+		tty.c_cc[VMIN] = 1; /* always set VMIN XXX */
+		read_flags |= BUILTIN_READ_SILENT;
+		tcsetattr(fd, TCSANOW, &tty);
+#endif
 	}
 
 	retval = (const char *)(uintptr_t)0;
@@ -194,6 +202,13 @@ shell_builtin_read(void FAST_FUNC (*setvar)(const char *name, const char *val),
 		}
 
 		c = buffer[bufpos];
+#if ENABLE_PLATFORM_MINGW32
+		if (c == '\r') c = '\n';
+
+		/* special case for win32 */
+		if (tty.c_cc[VMIN] < 256 && tty.c_lflag & ECHO)
+			fputc(c, stdout);
+#endif
 		if (c == '\0')
 			continue;
 		if (backslash) {
