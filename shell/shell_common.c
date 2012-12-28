@@ -194,7 +194,7 @@ shell_builtin_read(void FAST_FUNC (*setvar)(const char *name, const char *val),
 		}
 
 		c = buffer[bufpos];
-		if (c == '\0' || (ENABLE_PLATFORM_MINGW32 && c == '\r'))
+		if (c == '\0')
 			continue;
 		if (backslash) {
 			backslash = 0;
