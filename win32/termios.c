@@ -22,6 +22,11 @@ int tcsetattr(int fd, int m UNUSED_PARAM, const struct termios *t)
 	else
 		mode |= ENABLE_LINE_INPUT;
 
+	if (t->c_cc[VINTR] == 0)
+		mode &= ~ENABLE_PROCESSED_INPUT;
+	else
+		mode |= ENABLE_PROCESSED_INPUT;
+
 	SetConsoleMode(cin, mode);
 
 	return 0;
@@ -47,6 +52,13 @@ int tcgetattr(int fd, struct termios *t)
 		t->c_cc[VMIN] = 256;
 	else
 		t->c_cc[VMIN] = 1;
+
+#undef CTRL
+#define CTRL(a) ((a) & ~0x40)
+	if (mode & ENABLE_PROCESSED_INPUT) {
+		t->c_cc[VINTR] = CTRL('C');
+		t->c_cc[VEOF] = CTRL('D');
+	}
 
 	return 0;
 }
