@@ -136,6 +136,9 @@ shell_builtin_read(void FAST_FUNC (*setvar)(const char *name, const char *val),
 	if (nchars || (read_flags & BUILTIN_READ_SILENT)) {
 		tcgetattr(fd, &tty);
 		old_tty = tty;
+#if ENABLE_PLATFORM_MINGW32
+		tty.c_cc[VMIN] = 1; /* always set VMIN XXX */
+#endif
 		if (nchars) {
 			tty.c_lflag &= ~ICANON;
 			tty.c_cc[VMIN] = nchars < 256 ? nchars : 255;
