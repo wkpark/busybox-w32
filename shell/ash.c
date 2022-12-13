@@ -6105,6 +6105,11 @@ stoppedjobs(void)
 #define EMPTY -2                /* marks an unused slot in redirtab */
 #define CLOSED -1               /* marks a slot of previously-closed fd */
 
+#ifdef __MINGW64__
+#undef setjmp
+#define setjmp(a) _setjmp((a), NULL)
+#endif
+
 /*
  * Handle here documents.  Normally we fork off a process to write the
  * data to a pipe.  If the document is short, we can stuff the data in

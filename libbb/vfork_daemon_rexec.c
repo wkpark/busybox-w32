@@ -55,6 +55,12 @@ void FAST_FUNC set_task_comm(const char *comm)
  * NOFORK/NOEXEC support
  */
 #if NOFORK_SUPPORT
+
+#ifdef __MINGW64__
+#undef setjmp
+#define setjmp(a) _setjmp((a), NULL)
+#endif
+
 static jmp_buf die_jmp;
 static void jump(void)
 {
